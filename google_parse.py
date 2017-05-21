@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import numpy as np
 import numpy.matlib
-import cv2
 import scipy.misc
 import zlib
 import base64
@@ -12,11 +11,9 @@ import skimage.measure
 import triangle
 from glumpy import glm
 from sklearn.decomposition import PCA
-#
 import base_process
-import matplotlib.pyplot as plt
 
-storePath = '/home/andy/src/Google/panometa/'
+storePath = './Google/panometa/'
 
 
 class StreetView3DRegion:
@@ -120,7 +117,7 @@ class StreetView3DRegion:
             if end > pano_t >= start:
                 pano_id_dir = os.path.join(self.dataDir, panoId)
                 panorama = scipy.misc.imread(pano_id_dir + '.jpg').astype(np.float)
-                self.panoramaList.append(cv2.imread(pano_id_dir + '.jpg', 0))
+                #self.panoramaList.append(cv2.imread(pano_id_dir + '.jpg', 0))
                 #self.panoramaList.append(scipy.misc.imread(pano_id_dir + '.jpg').astype(np.float32))
                 with open(pano_id_dir + '.json') as data_file:
                     pano_meta = json.load(data_file)
