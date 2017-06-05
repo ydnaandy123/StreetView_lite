@@ -44,26 +44,36 @@ class StreetView3DRegion:
         # TODO query google data><
         self.QQ = False
 
-    def init_region(self, anchor=None):
+    def init_region(self, anchor=None, only3=False):
         """
         Initialize the local region
         Find the anchor
         :return:
         """
-        if anchor is None:
-            print('Random anchor')
-            for panoId in sorted(self.fileMeta['id2GPS']):
-                print('anchor is:', panoId, self.fileMeta['id2GPS'][panoId])
-                self.anchorId, self.anchorLat, self.anchorLon = \
-                    panoId, float(self.fileMeta['id2GPS'][panoId][0]), float(self.fileMeta['id2GPS'][panoId][1])
-                self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
-                break
-        else:
-            print('use the anchor')
-            print('anchor is:', anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon'])
+        if only3:
+            print('Middle anchor')
+            panoList = self.fileMeta['panoList']
+            panoId = panoList[0]
+            print('anchor is:', panoId, self.fileMeta['id2GPS'][panoId])
             self.anchorId, self.anchorLat, self.anchorLon = \
-                anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon']
+                panoId, float(self.fileMeta['id2GPS'][panoId][0]), float(self.fileMeta['id2GPS'][panoId][1])
             self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
+
+        else:
+            if anchor is None:
+                print('Random anchor')
+                for panoId in sorted(self.fileMeta['id2GPS']):
+                    print('anchor is:', panoId, self.fileMeta['id2GPS'][panoId])
+                    self.anchorId, self.anchorLat, self.anchorLon = \
+                        panoId, float(self.fileMeta['id2GPS'][panoId][0]), float(self.fileMeta['id2GPS'][panoId][1])
+                    self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
+                    break
+            else:
+                print('use the anchor')
+                print('anchor is:', anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon'])
+                self.anchorId, self.anchorLat, self.anchorLon = \
+                    anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon']
+                self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
 
         # The anchor
         try:
@@ -76,7 +86,7 @@ class StreetView3DRegion:
                 sv3d.global_adjustment()
                 sv3d.local_adjustment(self.anchorECEF)
                 # TODO: reduce some redundant work
-                #self.sv3D_Dict[self.anchorId] = sv3d
+                self.sv3D_Dict[self.anchorId] = sv3d
                 self.anchorMatrix = np.dot(sv3d.matrix_local, sv3d.matrix_global)
                 self.anchorYaw = sv3d.yaw
                 data_file.close()
