@@ -5,12 +5,11 @@
 import google_store
 
 # Create PanoFetcher
-zoom, radius = 1, 10
-fileID = 'viewDEMO'
+zoom, radius = 4, 10
+fileID = 'BBIG'
 """
 # 1. use BFS
 # parameter: fileId, gps, queryNum
 """
-if True:
-    panoFetcher = google_store.PanoFetcher(zoom, radius)
-    panoFetcher.bfs_aug(fileID, (24.7963071, 120.992373), 3)
+panoFetcher = google_store.PanoFetcher(zoom, radius)
+panoFetcher.bfs_aug(fileID, (25.069134, 121.479111), 1)

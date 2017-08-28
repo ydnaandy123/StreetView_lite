@@ -41,39 +41,31 @@ class StreetView3DRegion:
         self.sv3D_Dict, self.topologyData = {}, None
         # with time factor
         self.panoramaList, self.sv3D_Time, self.sv3D_location = [], [], []
+        """
+        " Dashcam only
+        """
         # TODO query google data><
         self.QQ = False
 
-    def init_region(self, anchor=None, only3=False):
+    def init_region(self, anchor=None):
         """
         Initialize the local region
         Find the anchor
         :return:
         """
-        if only3:
-            print('Middle anchor')
-            panoList = self.fileMeta['panoList']
-            panoId = panoList[0]
+        if anchor is None:
+            print('Random anchor')
+            panoId = self.fileMeta['panoList'][0]
             print('anchor is:', panoId, self.fileMeta['id2GPS'][panoId])
             self.anchorId, self.anchorLat, self.anchorLon = \
                 panoId, float(self.fileMeta['id2GPS'][panoId][0]), float(self.fileMeta['id2GPS'][panoId][1])
             self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
-
         else:
-            if anchor is None:
-                print('Random anchor')
-                for panoId in sorted(self.fileMeta['id2GPS']):
-                    print('anchor is:', panoId, self.fileMeta['id2GPS'][panoId])
-                    self.anchorId, self.anchorLat, self.anchorLon = \
-                        panoId, float(self.fileMeta['id2GPS'][panoId][0]), float(self.fileMeta['id2GPS'][panoId][1])
-                    self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
-                    break
-            else:
-                print('use the anchor')
-                print('anchor is:', anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon'])
-                self.anchorId, self.anchorLat, self.anchorLon = \
-                    anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon']
-                self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
+            print('use the anchor')
+            print('anchor is:', anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon'])
+            self.anchorId, self.anchorLat, self.anchorLon = \
+                anchor['anchorId'], anchor['anchorLat'], anchor['anchorLon']
+            self.anchorECEF = base_process.geo_2_ecef(self.anchorLat, self.anchorLon, 22)
 
         # The anchor
         try:
@@ -155,7 +147,45 @@ class StreetView3DRegion:
                 data_file.close()
             break
 
-    def create_topoloy(self):
+    def create_topology(self):
+        id_2_gps = self.fileMeta['id2GPS']
+        pano_num = len(id_2_gps)
+        data = np.zeros(pano_num, dtype=[('a_position', np.float32, 3), ('a_color', np.float32, 3)])
+        idx = 0
+        for panoid in id_2_gps:
+            gps = id_2_gps[panoid]
+            ecef = base_process.geo_2_ecef(float(gps[0]), float(gps[1]), 22) - self.anchorECEF
+            # TODO: ecef v.s. x-y plane
+            data['a_position'][idx] = np.asarray(ecef, dtype=np.float32)
+            idx += 1
+        data['a_color'] = [0, 1, 0]
+        data['a_position'] = base_process.sv3d_apply_m4(data=data['a_position'],
+                                   m4=np.linalg.inv(self.anchorMatrix))
+        self.topologyData = data
+
+    def create_topology_bfs(self):
+        id_2_gps = self.fileMeta['id2GPS']
+        pano_list = self.fileMeta['panoList']
+        pano_len = self.fileMeta['cur'] + 1
+        topology = np.zeros((pano_len, 3), dtype=np.float32)
+        for idx in range(0, pano_len):
+            gps = id_2_gps[pano_list[idx]]
+            lat, lon = float(gps[0]), float(gps[1])
+            ecef = np.array(base_process.geo_2_ecef(lat, lon, 22))
+            if idx == 0:
+                self.anchorECEF = ecef
+
+                matrix = np.eye(4, dtype=np.float32)
+                # Change xy-plan to ecef coordinate
+                glm.rotate(matrix, 90, 0, 1, 0)
+                glm.rotate(matrix, 90, 1, 0, 0)
+                glm.rotate(matrix, lat, 0, -1, 0)
+                glm.rotate(matrix, lon, 0, 0, 1)
+
+                self.anchorMatrix = matrix
+            else:
+                topology[idx, :] = ecef - self.anchorECEF
+        topology = base_process.sv3d_apply_m4(topology, m4=np.linalg.inv(self.anchorMatrix))
         id_2_gps = self.fileMeta['id2GPS']
         pano_num = len(id_2_gps)
         data = np.zeros(pano_num, dtype=[('a_position', np.float32, 3), ('a_color', np.float32, 3)])

@@ -5,14 +5,14 @@
 import google_parse
 
 
-fileID = 'viewDEMO'
+fileID = 'BBIG'
 """
 # 2. parse raw depth
 """
 if True:
     sv3DRegion = google_parse.StreetView3DRegion(fileID)
     sv3DRegion.init_region(anchor=None)
-    sv3DRegion.create_topoloy()
+    sv3DRegion.create_topology()
     sv3DRegion.create_region()
     for key in sv3DRegion.sv3D_Dict:
         sv = sv3DRegion.sv3D_Dict[key]

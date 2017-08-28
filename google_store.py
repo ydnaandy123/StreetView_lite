@@ -321,6 +321,8 @@ def get_panorama(panoid, zoom):
     for y in range(0, h):
         for x in range(0, w):
             img = get_panorama_tile(panoid, zoom, x, y)
+            if len(img.shape) == 2:
+                continue
             panorama[y * w_base:y * w_base + w_base, x * w_base:x * w_base + w_base, :] = img[0:w_base, 0:w_base, :]
     return panorama[0:h * h_base, 0:w * h_base, :]
 
